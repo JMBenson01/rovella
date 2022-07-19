@@ -87,16 +87,30 @@ impl Window {
     pub fn shutdown(&self) {
         self.plat_win.destroy();
     }
+
+    /// Windows: Gets the * mut HINSTANCE__ and * mut HWND__
+    #[cfg(target_os = "windows")]
+    #[inline]
+    pub fn get_platform_window_data(&self) -> (*mut HINSTANCE__, *mut HWND__) {
+        return (self.plat_win.hinst, self.plat_win.hwnd);
+    }
+
+    /// Linux: Gets the X11 u32 window and * mut Display
+    #[cfg(target_os = "linux")]
+    #[inline]
+    pub fn get_platform_window_data(&self)-> (*mut xlib::Display, u32) {
+        return (self.plat_win.display, self.plat_win.window);
+    }
 }
 
 /// A struct for platform related aspects of a window
 #[cfg(target_os = "windows")]
-pub struct PlatformWindow {
-    hinst: *mut HINSTANCE__,
-    hwnd: *mut HWND__,
+struct PlatformWindow {
+    pub hinst: *mut HINSTANCE__,
+    pub hwnd: *mut HWND__,
 }
 
-pub trait TPlatformWindow {
+trait TPlatformWindow {
     fn new(name: &'static str, width: u16, height: u16, x: i16, y: i16) -> Option<PlatformWindow>;
     fn update(&self, ev_que: &mut EventDeque);
     fn destroy(&self);
