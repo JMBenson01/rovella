@@ -2,8 +2,13 @@
 name = "rovella"
 version = "0.1.0"
 authors = ["JMBenson01 <jackiemartinbenson@gmail.com>"]
-edition = "2018"
+edition = "2021"
+license = "GPL-2.0-or-later"
 build = "build.rs"
+categories = ["game-development", "game-engines", ]
+keywords = ["Rovella Game Engine", "platform wrapper", "game library", "windowing library"]
+description = "A game library that, at present, only consists of a windowing and events wrapper"
+readme = "README.md"
 
 [lib]
 name = "rovella"

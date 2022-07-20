@@ -8,6 +8,15 @@
 - Wraps Platform events
 - Wrappers are thin with minimal overhead (or at least planned minimal overhead)
 
+### Planned
+
+- New features will have optional usage
+- A simplified frontend api 
+- Multithreading API with SIMD, OMP, GPGPU and standard threading support
+- Some rendering helper methods/functions (similar to glfw)
+- A renderer (this is long term)
+- An input manager
+
 ## Platforms:
 
 - Windows (Full Support - Not well tested)
