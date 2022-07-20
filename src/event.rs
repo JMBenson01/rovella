@@ -43,8 +43,8 @@ impl Display for EventType {
 }
 
 pub union EventData {
-    pub signed: i16,
-    pub unsigned: u16,
+    pub signed: i32,
+    pub unsigned: u32,
 }
 
 impl Default for EventData {
@@ -67,7 +67,7 @@ impl Event {
     }
 
     #[inline]
-    pub fn get_xy(&self) -> (i16, i16) {
+    pub fn get_xy(&self) -> (i32, i32) {
         return unsafe { (self.data0.signed, self.data1.signed) }
     }
 }

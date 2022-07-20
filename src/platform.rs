@@ -98,7 +98,7 @@ impl Window {
     /// Linux: Gets the X11 u32 window and * mut Display
     #[cfg(target_os = "linux")]
     #[inline]
-    pub fn get_platform_window_data(&self)-> (*mut xlib::Display, u32) {
+    pub fn get_platform_window_data(&self) -> (*mut xlib::Display, u32) {
         return (self.plat_win.display, self.plat_win.window);
     }
 }
@@ -300,7 +300,7 @@ unsafe extern "system" fn window_proc(
                 Event {
                     e_type: EventType::KeyDown,
                     data0: EventData {
-                        unsigned: wparam as u16,
+                        unsigned: wparam as u32,
                     },
                     data1: EventData::default(),
                 },
@@ -312,7 +312,7 @@ unsafe extern "system" fn window_proc(
                 Event {
                     e_type: EventType::KeyUp,
                     data0: EventData {
-                        unsigned: wparam as u16,
+                        unsigned: wparam as u32,
                     },
                     data1: EventData::default(),
                 },
@@ -324,10 +324,10 @@ unsafe extern "system" fn window_proc(
                 Event {
                     e_type: EventType::MouseMove,
                     data0: EventData {
-                        signed: GET_X_LPARAM(lparam) as i16,
+                        signed: GET_X_LPARAM(lparam) as i32,
                     },
                     data1: EventData {
-                        signed: GET_Y_LPARAM(lparam) as i16,
+                        signed: GET_Y_LPARAM(lparam) as i32,
                     },
                 },
                 hwnd,
@@ -340,7 +340,7 @@ unsafe extern "system" fn window_proc(
                     add_event_to_que(
                         Event {
                             e_type: EventType::MouseWheel,
-                            data0: EventData { signed: -1 as i16 },
+                            data0: EventData { signed: -1 as i32 },
                             data1: EventData::default(),
                         },
                         hwnd,
@@ -349,7 +349,7 @@ unsafe extern "system" fn window_proc(
                     add_event_to_que(
                         Event {
                             e_type: EventType::MouseWheel,
-                            data0: EventData { signed: 1 as i16 },
+                            data0: EventData { signed: 1 as i32 },
                             data1: EventData::default(),
                         },
                         hwnd,
@@ -424,9 +424,9 @@ unsafe extern "system" fn window_proc(
 }
 
 #[cfg(target_os = "windows")]
-impl From<u16> for Key {
-    fn from(val: u16) -> Self {
-        return match val {
+impl From<u32> for Key {
+    fn from(val: u32) -> Self {
+        return match val as u16 {
             0x08 => Key::Backspace,
             0x0D => Key::Enter,
             0x09 => Key::Tab,
@@ -557,10 +557,115 @@ impl From<u16> for Key {
 }
 
 #[cfg(target_os = "linux")]
-impl From<u16> for Key {
-    fn from(val: u16) -> Self {
+impl From<u32> for Key {
+    fn from(val: u32) -> Self {
         return match val {
-            XK_Escape => Key::Escape,
+            x11::keysym::XK_BackSpace => Key::Backspace,
+            x11::keysym::XK_Return => Key::Enter,
+            x11::keysym::XK_Tab => Key::Tab,
+            x11::keysym::XK_Pause => Key::Pause,
+            x11::keysym::XK_Caps_Lock => Key::Capital,
+            x11::keysym::XK_Escape => Key::Escape,
+            x11::keysym::XK_Mode_switch => Key::ModeChange,
+            x11::keysym::XK_space => Key::Space,
+            x11::keysym::XK_Prior => Key::Prior,
+            x11::keysym::XK_Next => Key::Next,
+            x11::keysym::XK_End => Key::End,
+            x11::keysym::XK_Home => Key::Home,
+            x11::keysym::XK_Left => Key::Left,
+            x11::keysym::XK_Up => Key::Up,
+            x11::keysym::XK_Right => Key::Right,
+            x11::keysym::XK_Down => Key::Down,
+            x11::keysym::XK_Select => Key::Select,
+            x11::keysym::XK_Print => Key::Print,
+            x11::keysym::XK_Execute => Key::Execute,
+            x11::keysym::XK_Insert => Key::Insert,
+            x11::keysym::XK_Delete => Key::Delete,
+            x11::keysym::XK_Help => Key::Help,
+            x11::keysym::XK_Meta_L => Key::Lwin,
+            x11::keysym::XK_Meta_R => Key::Rwin,
+            x11::keysym::XK_KP_0 => Key::Numpad0,
+            x11::keysym::XK_KP_1 => Key::Numpad1,
+            x11::keysym::XK_KP_2 => Key::Numpad2,
+            x11::keysym::XK_KP_3 => Key::Numpad3,
+            x11::keysym::XK_KP_4 => Key::Numpad4,
+            x11::keysym::XK_KP_5 => Key::Numpad5,
+            x11::keysym::XK_KP_6 => Key::Numpad6,
+            x11::keysym::XK_KP_7 => Key::Numpad7,
+            x11::keysym::XK_KP_8 => Key::Numpad8,
+            x11::keysym::XK_KP_9 => Key::Numpad9,
+            x11::keysym::XK_multiply => Key::Multiply,
+            x11::keysym::XK_KP_Add => Key::Add,
+            x11::keysym::XK_KP_Separator => Key::Separator,
+            x11::keysym::XK_KP_Subtract => Key::Subtract,
+            x11::keysym::XK_KP_Decimal => Key::Decimal,
+            x11::keysym::XK_KP_Divide => Key::Divide,
+            x11::keysym::XK_F1 => Key::F1,
+            x11::keysym::XK_F2 => Key::F2,
+            x11::keysym::XK_F3 => Key::F3,
+            x11::keysym::XK_F4 => Key::F4,
+            x11::keysym::XK_F5 => Key::F5,
+            x11::keysym::XK_F6 => Key::F6,
+            x11::keysym::XK_F7 => Key::F7,
+            x11::keysym::XK_F8 => Key::F8,
+            x11::keysym::XK_F9 => Key::F9,
+            x11::keysym::XK_F10 => Key::F10,
+            x11::keysym::XK_F11 => Key::F11,
+            x11::keysym::XK_F12 => Key::F12,
+            x11::keysym::XK_F13 => Key::F13,
+            x11::keysym::XK_F14 => Key::F14,
+            x11::keysym::XK_F15 => Key::F15,
+            x11::keysym::XK_F16 => Key::F16,
+            x11::keysym::XK_F17 => Key::F17,
+            x11::keysym::XK_F18 => Key::F18,
+            x11::keysym::XK_F19 => Key::F19,
+            x11::keysym::XK_F20 => Key::F20,
+            x11::keysym::XK_F21 => Key::F21,
+            x11::keysym::XK_F22 => Key::F22,
+            x11::keysym::XK_F23 => Key::F23,
+            x11::keysym::XK_F24 => Key::F24,
+            x11::keysym::XK_Num_Lock => Key::Numlock,
+            x11::keysym::XK_Scroll_Lock => Key::ScrollLock,
+            x11::keysym::XK_KP_Equal => Key::NumpadEqual,
+            x11::keysym::XK_Shift_L => Key::LShift,
+            x11::keysym::XK_Shift_R => Key::RShift,
+            x11::keysym::XK_Control_L => Key::LControl,
+            x11::keysym::XK_Control_R => Key::RControl,
+            x11::keysym::XK_Alt_L => Key::LAlt,
+            x11::keysym::XK_Alt_R => Key::RAlt,
+            x11::keysym::XK_semicolon => Key::Semicolon,
+            x11::keysym::XK_plus => Key::Plus,
+            x11::keysym::XK_comma => Key::Comma,
+            x11::keysym::XK_minus => Key::Minus,
+            x11::keysym::XK_period => Key::Period,
+            x11::keysym::XK_slash => Key::Slash,
+            x11::keysym::XK_grave => Key::Grave,
+            x11::keysym::XK_a | x11::keysym::XK_A => Key::A,
+            x11::keysym::XK_b | x11::keysym::XK_B => Key::B,
+            x11::keysym::XK_c | x11::keysym::XK_C => Key::C,
+            x11::keysym::XK_d | x11::keysym::XK_D => Key::D,
+            x11::keysym::XK_e | x11::keysym::XK_E => Key::E,
+            x11::keysym::XK_f | x11::keysym::XK_F => Key::F,
+            x11::keysym::XK_g | x11::keysym::XK_G => Key::G,
+            x11::keysym::XK_h | x11::keysym::XK_H => Key::H,
+            x11::keysym::XK_i | x11::keysym::XK_I => Key::I,
+            x11::keysym::XK_j | x11::keysym::XK_J => Key::J,
+            x11::keysym::XK_k | x11::keysym::XK_K => Key::K,
+            x11::keysym::XK_l | x11::keysym::XK_L => Key::L,
+            x11::keysym::XK_m | x11::keysym::XK_M => Key::M,
+            x11::keysym::XK_n | x11::keysym::XK_N => Key::N,
+            x11::keysym::XK_o | x11::keysym::XK_O => Key::O,
+            x11::keysym::XK_p | x11::keysym::XK_P => Key::P,
+            x11::keysym::XK_q | x11::keysym::XK_Q => Key::Q,
+            x11::keysym::XK_r | x11::keysym::XK_R => Key::R,
+            x11::keysym::XK_s | x11::keysym::XK_S => Key::S,
+            x11::keysym::XK_t | x11::keysym::XK_T => Key::T,
+            x11::keysym::XK_u | x11::keysym::XK_U => Key::U,
+            x11::keysym::XK_v | x11::keysym::XK_V => Key::V,
+            x11::keysym::XK_w | x11::keysym::XK_W => Key::W,
+            x11::keysym::XK_x | x11::keysym::XK_X => Key::X,
+            x11::keysym::XK_y | x11::keysym::XK_Y => Key::Y,
+            x11::keysym::XK_z | x11::keysym::XK_Z => Key::Z,
             _ => Key::None,
         };
     }
@@ -655,12 +760,8 @@ impl TPlatformWindow for PlatformWindow {
 
             let del_str = b"WM_DELETE_WINDOW";
 
-            let wm_delete_cookie = xcb_intern_atom(
-                connection,
-                0,
-                del_str.len() as u16,
-                del_str.as_ptr() as _
-            );
+            let wm_delete_cookie =
+                xcb_intern_atom(connection, 0, del_str.len() as u16, del_str.as_ptr() as _);
 
             let proto_str = b"WM_PROTOCOLS";
 
@@ -671,17 +772,9 @@ impl TPlatformWindow for PlatformWindow {
                 proto_str.as_ptr() as _,
             );
 
-            let wm_delete_reply = xcb_intern_atom_reply(
-                connection,
-                wm_delete_cookie,
-                null_mut()
-            );
+            let wm_delete_reply = xcb_intern_atom_reply(connection, wm_delete_cookie, null_mut());
 
-            let wm_proto_reply = xcb_intern_atom_reply(
-                connection,
-                wm_protocols_cookie,
-                null_mut()
-            );
+            let wm_proto_reply = xcb_intern_atom_reply(connection, wm_protocols_cookie, null_mut());
 
             xcb_map_window(connection, win);
 
@@ -709,11 +802,11 @@ impl TPlatformWindow for PlatformWindow {
         loop {
             unsafe {
                 event = xcb_poll_for_event(self.connection);
-                if (event.is_null()) {
+                if event.is_null() {
                     break;
                 }
 
-                let event_enum: u8 = ((*event).response_type as u8 & 0x7f);
+                let event_enum: u8 = (*event).response_type as u8 & 0x7f;
 
                 match event_enum {
                     XCB_KEY_PRESS => {
@@ -727,7 +820,9 @@ impl TPlatformWindow for PlatformWindow {
 
                         ev_que.push_back(Event {
                             e_type: EventType::KeyDown,
-                            data0: EventData { unsigned: key as u16},
+                            data0: EventData {
+                                unsigned: key as u32,
+                            },
                             data1: EventData::default(),
                         });
                     }
@@ -742,7 +837,9 @@ impl TPlatformWindow for PlatformWindow {
 
                         ev_que.push_back(Event {
                             e_type: EventType::KeyUp,
-                            data0: EventData { unsigned: key as u16},
+                            data0: EventData {
+                                unsigned: key as u32,
+                            },
                             data1: EventData::default(),
                         });
                     }
@@ -750,12 +847,16 @@ impl TPlatformWindow for PlatformWindow {
                         let motion = event as *const xcb_motion_notify_event_t;
                         ev_que.push_back(Event {
                             e_type: EventType::MouseMove,
-                            data0: EventData { signed: (*motion).root_x },
-                            data1: EventData { signed: (*motion).root_y },
+                            data0: EventData {
+                                signed: (*motion).root_x as i32,
+                            },
+                            data1: EventData {
+                                signed: (*motion).root_y as i32,
+                            },
                         });
                     }
                     XCB_BUTTON_PRESS => {
-                        let button_event = event as * mut xcb_button_press_event_t;
+                        let button_event = event as *mut xcb_button_press_event_t;
 
                         match (*button_event).detail as u32 {
                             XCB_BUTTON_INDEX_1 => {
@@ -783,7 +884,7 @@ impl TPlatformWindow for PlatformWindow {
                         }
                     }
                     XCB_BUTTON_RELEASE => {
-                        let button_event = event as * mut xcb_button_press_event_t;
+                        let button_event = event as *mut xcb_button_press_event_t;
 
                         match (*button_event).detail as u32 {
                             XCB_BUTTON_INDEX_1 => {

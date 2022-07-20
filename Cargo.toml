@@ -5,8 +5,9 @@ authors = ["JMBenson01 <jackiemartinbenson@gmail.com>"]
 edition = "2018"
 build = "build.rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
+[lib]
+name = "rovella"
+path = "src/main.rs"
 
 [dependencies]
 rovella_logger = "0.1.3"
