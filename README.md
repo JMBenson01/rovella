@@ -27,19 +27,9 @@
 Note that this just creates a window, a programmer must call `Window::get_platform_window_data()` on
 their window object.
 ```rust
-use crate::event::{EventManager, EventType};
-use crate::keys::Key;
-use crate::platform::*;
-
-#[macro_use]
-extern crate rovella_logger;
-
-#[cfg(target_os = "linux")]
-extern crate libc;
-
-pub mod event;
-pub mod keys;
-pub mod platform;
+use rovella::event::{EventManager, EventType};
+use rovella::keys::Key;
+use rovella::platform::*;
 
 fn main() {
 
@@ -53,9 +43,6 @@ fn main() {
         100,
         100
     ).expect("window failed");
-
-    log_info!("Initialised subsystems successfully");
-    log_info!("Now entering mainloop");
 
     while running {
         window.update(ev_manager.get_event_que());
