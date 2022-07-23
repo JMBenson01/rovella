@@ -15,7 +15,7 @@ pub mod application;
 
 fn main() {
     let mut app: application::App = application::App::create(
-        "Vulkan",
+        "hello world",
         15,
         15,
         1920,

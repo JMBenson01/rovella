@@ -7,11 +7,11 @@
 - Wraps Platform windowing code
 - Wraps Platform events
 - Wrappers are thin with minimal overhead (or at least planned minimal overhead)
+- Supports the raw-window-handle for xcb and win32 (or linux and windows)
 
 ### Planned
 
 - New features will have optional usage
-- A simplified frontend api 
 - Multithreading API with SIMD, OMP, GPGPU and standard threading support
 - Some rendering helper methods/functions (similar to glfw)
 - A renderer (this is long term)
@@ -32,44 +32,40 @@ use rovella::keys::Key;
 use rovella::platform::*;
 
 fn main() {
-
-    let mut running: bool = true;
-
-    let mut ev_manager = EventManager::new();
-    let window = Window::new(
+    let mut app: application::App = application::App::create(
         "hello world",
-        500,
-        500,
-        100,
-        100
-    ).expect("window failed");
+        15,
+        15,
+        1920,
+        1080
+    ).unwrap(); // Only if your lazy :)
 
-    while running {
-        window.update(ev_manager.get_event_que());
-        loop {
-            let ev_option = ev_manager.poll_events();
-            if ev_option.is_none() {
-                break;
+    // Note: I haven't tested the raw window handle much so it may have bugs
+    let handle = app.get_raw_window_handle();
+
+    while app.is_running() {
+
+        let event_op = app.poll_events();
+        if event_op.is_none() {
+            continue;
+        }
+
+        let event = event_op.unwrap();
+
+        match event.e_type {
+            EventType::WinClose => {
+                app.quit();
             }
-
-            let raw_event = ev_option.unwrap();
-
-            match raw_event.e_type {
-                EventType::WinClose => running = false,
-                EventType::KeyDown => {
-                    let key: Key = raw_event.get_key();
-                    match key {
-                        Key::Escape => {
-                            running = false;
-                        }
-                        _ => {}
-                    }
+            EventType::KeyDown => {
+                if event.get_key() == Key::Escape {
+                    app.quit();
                 }
-                _ => {}
             }
+            _ => {}
         }
     }
 
-    window.shutdown();
+    app.shutdown();
+
 }
 ```
