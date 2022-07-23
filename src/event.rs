@@ -1,7 +1,7 @@
-use std::borrow::{Borrow, BorrowMut};
+use std::borrow::BorrowMut;
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
-use crate::Key;
+use crate::keys::Key;
 
 pub enum EventType {
     // Direct Wrapping of Platform Events

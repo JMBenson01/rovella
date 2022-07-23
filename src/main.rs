@@ -1,9 +1,9 @@
-use crate::event::{EventManager, EventType};
+use crate::event::{EventType};
 use crate::keys::Key;
-use crate::platform::*;
 
 #[macro_use]
 extern crate rovella_logger;
+extern crate raw_window_handle;
 
 #[cfg(target_os = "linux")]
 extern crate libc;
@@ -11,48 +11,42 @@ extern crate libc;
 pub mod event;
 pub mod keys;
 pub mod platform;
+pub mod application;
 
 fn main() {
-
-    let mut running: bool = true;
-
-    let mut ev_manager = EventManager::new();
-    let window = Window::new(
-        "hello world",
+    let mut app: application::App = application::App::create(
+        "Vulkan",
+        15,
+        15,
         1920,
-        1080,
-        100,
-        100
-    ).expect("window failed");
+        1080
+    ).unwrap(); // Only if your lazy :)
 
-    log_info!("Initialised subsystems successfully");
-    log_info!("Now entering mainloop");
+    // Note: I haven't tested the raw window handle much so it may have bugs
+    let handle = app.get_raw_window_handle();
 
-    while running {
-        window.update(ev_manager.get_event_que());
-        loop {
-            let ev_option = ev_manager.poll_events();
-            if ev_option.is_none() {
-                break;
+    while app.is_running() {
+
+        let event_op = app.poll_events();
+        if event_op.is_none() {
+            continue;
+        }
+
+        let event = event_op.unwrap();
+
+        match event.e_type {
+            EventType::WinClose => {
+                app.quit();
             }
-
-            let raw_event = ev_option.unwrap();
-
-            match raw_event.e_type {
-                EventType::WinClose => running = false,
-                EventType::KeyDown => {
-                    let key: Key = raw_event.get_key();
-                    match key {
-                        Key::Escape => {
-                            running = false;
-                        }
-                        _ => {}
-                    }
+            EventType::KeyDown => {
+                if event.get_key() == Key::Escape {
+                    app.quit();
                 }
-                _ => {}
             }
+            _ => {}
         }
     }
 
-    window.shutdown();
+    app.shutdown();
+
 }

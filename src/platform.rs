@@ -1,5 +1,5 @@
 #[cfg(target_os = "windows")]
-mod plat_libs {
+pub mod plat_libs {
     pub use winapi::ctypes::c_int;
     pub use winapi::shared::minwindef::*;
     pub use winapi::shared::windef::POINT;
@@ -16,10 +16,18 @@ mod plat_libs {
     pub use std::ops::Deref;
     pub use std::ptr;
     pub use std::ptr::null_mut;
+    pub use raw_window_handle::{RawWindowHandle, Win32WindowHandle, XcbWindowHandle};
+}
+
+#[cfg(target_os = "windows")]
+pub mod types {
+    use crate::platform::plat_libs::*;
+    pub type Hwnd = HWND;
+    pub type Hinstance = HINSTANCE;
 }
 
 #[cfg(target_os = "linux")]
-mod plat_libs {
+pub mod plat_libs {
     pub use std::ptr;
     pub use std::ptr::{null, null_mut};
     pub use std::{thread, time};
@@ -32,6 +40,16 @@ mod plat_libs {
     pub use xcb::{ConnResult, Connection};
 }
 
+#[cfg(target_os = "linux")]
+pub mod types {
+    use crate::platform::plat_libs::*;
+    pub type Display = xlib::Display;
+    pub type Window = u32;
+    pub type XcbConnection = xcb_connection_t;
+}
+
+use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::RawWindowHandle::{Win32, Xcb};
 use crate::event::{Event, EventData, EventDeque, EventType};
 use crate::keys::Key;
 use plat_libs::*;
@@ -76,7 +94,6 @@ impl Window {
     }
 
     /// Gets events and helps to send them to the event manager
-    /// Its important that &self is used here since
     #[inline]
     pub fn update(&self, ev_que: &mut EventDeque) {
         self.plat_win.update(ev_que);
@@ -89,26 +106,41 @@ impl Window {
     }
 
     /// Windows: Gets the * mut HINSTANCE__ and * mut HWND__
+    /// Linux: Gets the X11 u32 window and * mut Display
     #[cfg(target_os = "windows")]
     #[inline]
-    pub fn get_platform_window_data(&self) -> (*mut HINSTANCE__, *mut HWND__) {
-        return (self.plat_win.hinst, self.plat_win.hwnd);
-    }
-
-    /// Linux: Gets the X11 u32 window and * mut Display
-    #[cfg(target_os = "linux")]
-    #[inline]
-    pub fn get_platform_window_data(&self) -> (*mut xlib::Display, u32) {
-        return (self.plat_win.display, self.plat_win.window);
+    pub fn get_raw_window_handle(&self) -> RawWindowHandle {
+        return self.plat_win.raw_window_handle();
     }
 }
 
 /// A struct for platform related aspects of a window
 #[cfg(target_os = "windows")]
 struct PlatformWindow {
-    pub hinst: *mut HINSTANCE__,
-    pub hwnd: *mut HWND__,
+    pub hinst: types::Hinstance,
+    pub hwnd: *mut types::Hwnd,
 }
+
+unsafe impl raw_window_handle::HasRawWindowHandle for PlatformWindow {
+    #[cfg(target_os = "windows")]
+    fn raw_window_handle(&self) -> RawWindowHandle {
+        let mut handle = Win32WindowHandle::empty();
+        handle.hwnd = self.hwnd as _;
+        handle.hinstance = self.hinst as _;
+
+        return Win32(handle);
+    }
+
+    #[cfg(target_os = "linux")]
+    fn raw_window_handle(&self) -> RawWindowHandle {
+        let mut handle = XcbWindowHandle::empty();
+        handle.window = self.window;
+        handle.visual_id = 0;
+
+        return Xcb(handle);
+    }
+}
+
 
 trait TPlatformWindow {
     fn new(name: &'static str, width: u16, height: u16, x: i16, y: i16) -> Option<PlatformWindow>;
@@ -125,13 +157,13 @@ impl TPlatformWindow for PlatformWindow {
             hwnd: null_mut(),
         };
 
+        let class_name = CString::new("rovella_window_class").expect("CString ERROR");
+        let window_name = CString::new(name).expect("CString ERROR");
+
         unsafe {
             win.hinst = GetModuleHandleA(0 as *const i8);
             let icon = LoadIconA(win.hinst, IDI_APPLICATION as *const i8);
             let cursor = LoadCursorA(win.hinst, IDC_ARROW as *const i8);
-
-            let class_name = CString::new("rovella_window_class").expect("CString ERROR");
-            let window_name = CString::new(name).expect("CString ERROR");
 
             let wc = WNDCLASSA {
                 style: CS_DBLCLKS,
@@ -154,10 +186,12 @@ impl TPlatformWindow for PlatformWindow {
             let window_style = WS_OVERLAPPED | WS_SYSMENU;
             let window_ex_style = WS_EX_APPWINDOW | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
 
+            // Todo: Memory allocation is likely unecessary, investigate
             let layout = Layout::new::<RECT>();
             let border_rect: *mut u8 = alloc_zeroed(layout);
 
-            AdjustWindowRectEx(border_rect as *mut RECT, window_style, 0, window_ex_style);
+            AdjustWindowRectEx(border_rect as *mut RECT, window_style,
+                               0, window_ex_style);
 
             dealloc(border_rect, layout);
 
@@ -174,14 +208,16 @@ impl TPlatformWindow for PlatformWindow {
                 null_mut(),
                 win.hinst,
                 null_mut(),
-            );
+            ) as _;
+        }
 
-            if win.hwnd.is_null() {
-                log_fatal!("Failed to create window {}", name);
-                return None;
-            }
+        if win.hwnd.is_null() {
+            log_fatal!("Failed to create window {}", name);
+            return None;
+        }
 
-            ShowWindow(win.hwnd, SW_SHOW);
+        unsafe {
+            ShowWindow(win.hwnd as _, SW_SHOW);
         }
 
         return Some(win);
@@ -190,7 +226,7 @@ impl TPlatformWindow for PlatformWindow {
     #[inline]
     fn update(&self, ev_que: &mut EventDeque) {
         unsafe {
-            SetWindowLongPtrA(self.hwnd, GWLP_USERDATA, ptr::addr_of_mut!(*ev_que) as _);
+            SetWindowLongPtrA(self.hwnd as _, GWLP_USERDATA, ptr::addr_of_mut!(*ev_que) as _);
         }
 
         let mut message: MSG = MSG {
@@ -214,7 +250,7 @@ impl TPlatformWindow for PlatformWindow {
     fn destroy(&self) {
         if !self.hwnd.is_null() {
             unsafe {
-                DestroyWindow(self.hwnd);
+                DestroyWindow(self.hwnd as _);
             }
         } else {
             log_warn!("Attempted to close HWND with null value");
@@ -679,9 +715,9 @@ pub fn sleep(ms: u32) {
 
 #[cfg(target_os = "linux")]
 pub struct PlatformWindow {
-    display: *mut xlib::Display,
-    connection: *mut xcb_connection_t,
-    window: u32,
+    pub display: *mut xlib::Display,
+    pub connection: *mut xcb_connection_t,
+    pub window: u32,
     screen: *mut xcb_screen_t,
     wm_protocols: xcb_atom_t,
     wm_delete_win: xcb_atom_t,
