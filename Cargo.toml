@@ -1,12 +1,12 @@
 [package]
 name = "rovella"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["JMBenson01 <jackiemartinbenson@gmail.com>"]
 edition = "2021"
 license = "GPL-2.0-or-later"
 build = "build.rs"
 categories = ["game-development", "game-engines", ]
-keywords = ["game-engine", "platform", "windowing", "winapi", "xcb", "game-library"]
+keywords = ["game-engine", "platform", "windowing", "winapi", "xcb"]
 description = "A game library that, at present, only consists of a windowing and events wrapper"
 readme = "README.md"
 
