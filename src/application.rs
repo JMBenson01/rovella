@@ -1,3 +1,4 @@
+use raw_window_handle::HasRawWindowHandle;
 use crate::event::EventManager;
 use crate::platform::*;
 
@@ -22,11 +23,9 @@ impl App {
             return None;
         }
 
-        let proto_event_manager = EventManager::new();
-
         return Some(App {
             window: proto_window.unwrap(),
-            event_manager: proto_event_manager,
+            event_manager: EventManager::new(),
             running: true
         })
     }
@@ -60,6 +59,11 @@ impl App {
 
     #[inline]
     pub fn get_raw_window_handle(&self) -> raw_window_handle::RawWindowHandle {
-        return self.window.get_raw_window_handle();
+        return self.window.raw_window_handle();
+    }
+
+    #[inline]
+    pub fn get_window_ref(&self) -> &Window {
+        return &self.window;
     }
 }

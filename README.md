@@ -24,12 +24,10 @@
 - MacOS (Planned)
 
 ## Example Program
-Note that this just creates a window, a programmer must call `Window::get_platform_window_data()` on
-their window object.
 ```rust
 use rovella::event::{EventManager, EventType};
 use rovella::keys::Key;
-use rovella::platform::*;
+use rovella::application;
 
 fn main() {
     let mut app: application::App = application::App::create(
@@ -41,7 +39,9 @@ fn main() {
     ).unwrap(); // Only if your lazy :)
 
     // Note: I haven't tested the raw window handle much so it may have bugs
-    let handle = app.get_raw_window_handle();
+    let renderer = Renderer3rdParty::new(
+        app.get_window_ref() // gets window with HasRawWindowHandle trait
+    );
 
     while app.is_running() {
 

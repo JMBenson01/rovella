@@ -86,11 +86,13 @@ impl EventManager {
         }
     }
 
+    /// Returns the VecDeque que with events, and borrows a mutable version of it
     #[inline]
     pub fn get_event_que(&mut self) -> &mut EventDeque {
         return self.que.borrow_mut();
     }
 
+    /// Gets the next Event in the event que
     #[inline]
     pub fn poll_events(&mut self) -> Option<Event> {
         return self.que.pop_front();

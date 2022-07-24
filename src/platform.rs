@@ -16,7 +16,7 @@ pub mod plat_libs {
     pub use std::ops::Deref;
     pub use std::ptr;
     pub use std::ptr::null_mut;
-    pub use raw_window_handle::{RawWindowHandle, Win32WindowHandle, XcbWindowHandle};
+
 }
 
 #[cfg(target_os = "windows")]
@@ -48,8 +48,9 @@ pub mod types {
     pub type XcbConnection = xcb_connection_t;
 }
 
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::{HasRawWindowHandle, RawWindowHandle, Win32Handle, XcbHandle};
 use raw_window_handle::RawWindowHandle::{Win32, Xcb};
+
 use crate::event::{Event, EventData, EventDeque, EventType};
 use crate::keys::Key;
 use plat_libs::*;
@@ -104,43 +105,34 @@ impl Window {
     pub fn shutdown(&self) {
         self.plat_win.destroy();
     }
-
-    /// Windows: Gets the * mut HINSTANCE__ and * mut HWND__
-    /// Linux: Gets the X11 u32 window and * mut Display
-    #[cfg(target_os = "windows")]
-    #[inline]
-    pub fn get_raw_window_handle(&self) -> RawWindowHandle {
-        return self.plat_win.raw_window_handle();
-    }
 }
 
-/// A struct for platform related aspects of a window
-#[cfg(target_os = "windows")]
-struct PlatformWindow {
-    pub hinst: types::Hinstance,
-    pub hwnd: *mut types::Hwnd,
-}
-
-unsafe impl raw_window_handle::HasRawWindowHandle for PlatformWindow {
+unsafe impl HasRawWindowHandle for Window {
     #[cfg(target_os = "windows")]
     fn raw_window_handle(&self) -> RawWindowHandle {
-        let mut handle = Win32WindowHandle::empty();
-        handle.hwnd = self.hwnd as _;
-        handle.hinstance = self.hinst as _;
+        let mut handle = Win32Handle::empty();
+        handle.hwnd = self.plat_win.hwnd as _;
+        handle.hinstance = self.plat_win.hinst as _;
 
         return Win32(handle);
     }
 
     #[cfg(target_os = "linux")]
     fn raw_window_handle(&self) -> RawWindowHandle {
-        let mut handle = XcbWindowHandle::empty();
-        handle.window = self.window;
+        let mut handle = XcbHandle::empty();
+        handle.window = self.plat_win.window;
         handle.visual_id = 0;
 
         return Xcb(handle);
     }
 }
 
+/// A struct for platform related aspects of a window
+#[cfg(target_os = "windows")]
+struct PlatformWindow {
+    pub(crate) hinst: types::Hinstance,
+    pub(crate) hwnd: *mut types::Hwnd,
+}
 
 trait TPlatformWindow {
     fn new(name: &'static str, width: u16, height: u16, x: i16, y: i16) -> Option<PlatformWindow>;

@@ -1,9 +1,11 @@
 use crate::event::{EventType};
 use crate::keys::Key;
 
+
 #[macro_use]
 extern crate rovella_logger;
 extern crate raw_window_handle;
+extern crate wgpu;
 
 #[cfg(target_os = "linux")]
 extern crate libc;
@@ -11,6 +13,7 @@ extern crate libc;
 pub mod event;
 pub mod keys;
 pub mod platform;
+pub mod graphics;
 pub mod application;
 
 fn main() {
@@ -22,8 +25,6 @@ fn main() {
         1080
     ).unwrap(); // Only if your lazy :)
 
-    // Note: I haven't tested the raw window handle much so it may have bugs
-    let handle = app.get_raw_window_handle();
 
     while app.is_running() {
 
