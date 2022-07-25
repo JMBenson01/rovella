@@ -94,6 +94,26 @@ impl Window {
         });
     }
 
+    #[inline]
+    pub fn get_width(&self) -> u16 {
+        return self.width;
+    }
+
+    #[inline]
+    pub fn get_height(&self) -> u16 {
+        return self.height;
+    }
+
+    #[inline]
+    pub fn get_x(&self) -> i16 {
+        return self.x;
+    }
+
+    #[inline]
+    pub fn get_y(&self) -> i16 {
+        return self.y;
+    }
+
     /// Gets events and helps to send them to the event manager
     #[inline]
     pub fn update(&self, ev_que: &mut EventDeque) {
@@ -312,8 +332,7 @@ unsafe extern "system" fn window_proc(
             add_event_to_que(
                 Event {
                     e_type: EventType::WinClose,
-                    data0: EventData::default(),
-                    data1: EventData::default(),
+                    data: EventData::default()
                 },
                 hwnd,
             );
@@ -327,10 +346,9 @@ unsafe extern "system" fn window_proc(
             add_event_to_que(
                 Event {
                     e_type: EventType::KeyDown,
-                    data0: EventData {
-                        unsigned: wparam as u32,
-                    },
-                    data1: EventData::default(),
+                    data: EventData {
+                        m_u32: wparam as u32,
+                    }
                 },
                 hwnd,
             );
@@ -339,10 +357,9 @@ unsafe extern "system" fn window_proc(
             add_event_to_que(
                 Event {
                     e_type: EventType::KeyUp,
-                    data0: EventData {
-                        unsigned: wparam as u32,
-                    },
-                    data1: EventData::default(),
+                    data: EventData {
+                        m_u32: wparam as u32,
+                    }
                 },
                 hwnd,
             );
@@ -351,12 +368,12 @@ unsafe extern "system" fn window_proc(
             add_event_to_que(
                 Event {
                     e_type: EventType::MouseMove,
-                    data0: EventData {
-                        signed: GET_X_LPARAM(lparam) as i32,
-                    },
-                    data1: EventData {
-                        signed: GET_Y_LPARAM(lparam) as i32,
-                    },
+                    data: EventData {
+                        m_arr2_i16: [
+                            GET_X_LPARAM(lparam) as i16,
+                            GET_Y_LPARAM(lparam) as i16
+                        ]
+                    }
                 },
                 hwnd,
             );
@@ -368,8 +385,7 @@ unsafe extern "system" fn window_proc(
                     add_event_to_que(
                         Event {
                             e_type: EventType::MouseWheel,
-                            data0: EventData { signed: -1 as i32 },
-                            data1: EventData::default(),
+                            data: EventData { m_i32: -1 as i32 },
                         },
                         hwnd,
                     );
@@ -377,8 +393,7 @@ unsafe extern "system" fn window_proc(
                     add_event_to_que(
                         Event {
                             e_type: EventType::MouseWheel,
-                            data0: EventData { signed: 1 as i32 },
-                            data1: EventData::default(),
+                            data: EventData { m_i32: 1 as i32 },
                         },
                         hwnd,
                     );
@@ -389,8 +404,7 @@ unsafe extern "system" fn window_proc(
             add_event_to_que(
                 Event {
                     e_type: EventType::MouseLeftBtnDown,
-                    data0: EventData::default(),
-                    data1: EventData::default(),
+                    data: EventData::default(),
                 },
                 hwnd,
             );
@@ -399,8 +413,7 @@ unsafe extern "system" fn window_proc(
             add_event_to_que(
                 Event {
                     e_type: EventType::MouseMidBtnDown,
-                    data0: EventData::default(),
-                    data1: EventData::default(),
+                    data: EventData::default(),
                 },
                 hwnd,
             );
@@ -409,8 +422,7 @@ unsafe extern "system" fn window_proc(
             add_event_to_que(
                 Event {
                     e_type: EventType::MouseRightBtnDown,
-                    data0: EventData::default(),
-                    data1: EventData::default(),
+                    data: EventData::default(),
                 },
                 hwnd,
             );
@@ -419,8 +431,7 @@ unsafe extern "system" fn window_proc(
             add_event_to_que(
                 Event {
                     e_type: EventType::MouseLeftBtnUp,
-                    data0: EventData::default(),
-                    data1: EventData::default(),
+                    data: EventData::default(),
                 },
                 hwnd,
             );
@@ -429,8 +440,7 @@ unsafe extern "system" fn window_proc(
             add_event_to_que(
                 Event {
                     e_type: EventType::MouseMidBtnUp,
-                    data0: EventData::default(),
-                    data1: EventData::default(),
+                    data: EventData::default(),
                 },
                 hwnd,
             );
@@ -439,8 +449,7 @@ unsafe extern "system" fn window_proc(
             add_event_to_que(
                 Event {
                     e_type: EventType::MouseRightBtnUp,
-                    data0: EventData::default(),
-                    data1: EventData::default(),
+                    data: EventData::default(),
                 },
                 hwnd,
             );
@@ -848,10 +857,9 @@ impl TPlatformWindow for PlatformWindow {
 
                         ev_que.push_back(Event {
                             e_type: EventType::KeyDown,
-                            data0: EventData {
-                                unsigned: key as u32,
-                            },
-                            data1: EventData::default(),
+                            data: EventData {
+                                m_u32: key as u32,
+                            }
                         });
                     }
                     XCB_KEY_RELEASE => {
@@ -865,22 +873,21 @@ impl TPlatformWindow for PlatformWindow {
 
                         ev_que.push_back(Event {
                             e_type: EventType::KeyUp,
-                            data0: EventData {
-                                unsigned: key as u32,
-                            },
-                            data1: EventData::default(),
+                            data: EventData {
+                                m_u32: key as u32,
+                            }
                         });
                     }
                     XCB_MOTION_NOTIFY => {
                         let motion = event as *const xcb_motion_notify_event_t;
                         ev_que.push_back(Event {
                             e_type: EventType::MouseMove,
-                            data0: EventData {
-                                signed: (*motion).root_x as i32,
-                            },
-                            data1: EventData {
-                                signed: (*motion).root_y as i32,
-                            },
+                            data: EventData {
+                                m_i32: [
+                                    (*motion).root_x as i32,
+                                    (*motion).root_y as i32
+                                ]
+                            }
                         });
                     }
                     XCB_BUTTON_PRESS => {
@@ -890,22 +897,19 @@ impl TPlatformWindow for PlatformWindow {
                             XCB_BUTTON_INDEX_1 => {
                                 ev_que.push_back(Event {
                                     e_type: EventType::MouseLeftBtnDown,
-                                    data0: EventData::default(),
-                                    data1: EventData::default(),
+                                    data: EventData::default(),
                                 });
                             }
                             XCB_BUTTON_INDEX_2 => {
                                 ev_que.push_back(Event {
                                     e_type: EventType::MouseMidBtnDown,
-                                    data0: EventData::default(),
-                                    data1: EventData::default(),
+                                    data: EventData::default(),
                                 });
                             }
                             XCB_BUTTON_INDEX_3 => {
                                 ev_que.push_back(Event {
                                     e_type: EventType::MouseRightBtnDown,
-                                    data0: EventData::default(),
-                                    data1: EventData::default(),
+                                    data: EventData::default(),
                                 });
                             }
                             _ => {}
@@ -918,22 +922,19 @@ impl TPlatformWindow for PlatformWindow {
                             XCB_BUTTON_INDEX_1 => {
                                 ev_que.push_back(Event {
                                     e_type: EventType::MouseLeftBtnUp,
-                                    data0: EventData::default(),
-                                    data1: EventData::default(),
+                                    data: EventData::default(),
                                 });
                             }
                             XCB_BUTTON_INDEX_2 => {
                                 ev_que.push_back(Event {
                                     e_type: EventType::MouseMidBtnUp,
-                                    data0: EventData::default(),
-                                    data1: EventData::default(),
+                                    data: EventData::default(),
                                 });
                             }
                             XCB_BUTTON_INDEX_3 => {
                                 ev_que.push_back(Event {
                                     e_type: EventType::MouseRightBtnUp,
-                                    data0: EventData::default(),
-                                    data1: EventData::default(),
+                                    data: EventData::default(),
                                 });
                             }
                             _ => {}
@@ -947,8 +948,7 @@ impl TPlatformWindow for PlatformWindow {
                         if (*cm).data.data32()[0] == self.wm_delete_win {
                             ev_que.push_back(Event {
                                 e_type: EventType::WinClose,
-                                data0: EventData::default(),
-                                data1: EventData::default(),
+                                data: EventData::default(),
                             });
                         }
                     }
