@@ -11,51 +11,98 @@ use wgpu::{Buffer, BufferUsages, Instance, TextureViewDimension, VertexState, Ve
 
 
 pub struct Renderer {
-    device_context: RenderDeviceContext,
-    draw_context: RenderDrawContext
+    context: RenderContext,
 }
 
 impl Renderer {
-    #[inline ]
+    #[inline]
     pub fn new(win: &Window) -> Option<Renderer> {
-        let device_context_op = futures::executor::block_on(RenderDeviceContext::new(win));
-        if device_context_op.is_none() {
+        let context_op = futures::executor::block_on(RenderContext::new(win));
+        if context_op.is_none() {
             return None;
         }
 
-        let device_context = device_context_op.unwrap();
+        let context = context_op.unwrap();
 
-        let draw_context = RenderDrawContext::new(&device_context);
-
-        Some(Renderer { device_context, draw_context })
+        Some(Renderer { context })
     }
 
 
     #[inline]
     pub fn render(&mut self) {
-        self.draw_context.render(&self.device_context);
+        self.context.render();
     }
 
 }
 
-struct RenderDrawContext {
+pub struct RenderContext {
+    pub surface: wgpu::Surface,
+    pub adapter: wgpu::Adapter,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
     pub pipeline: wgpu::RenderPipeline,
 }
 
-impl RenderDrawContext {
-    fn new(context: &RenderDeviceContext) -> RenderDrawContext {
-        /*let vertex_buffer_layout = [wgpu::VertexBufferLayout {
-            array_stride: 0,
-            step_mode: VertexStepMode::Instance, // Todo: Revisit this
-            attributes: &[]
-        }];*/
+impl RenderContext {
+    pub(crate) async fn new(win: &Window) -> Option<RenderContext> {
+        let inst = Instance::new(wgpu::Backends::VULKAN);
 
-        let shader_module = context
-            .create_shader_module_from_file(include_str!("shaders/vertex_shader.wgsl"));
+        let surface = unsafe { inst.create_surface(win) };
 
-        let pipeline = context.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let adap_op = inst
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                force_fallback_adapter: false,
+                compatible_surface: Some(&surface),
+            })
+            .await;
+
+        if adap_op.is_none() {
+            log_error!("Failed to create adapter for renderer");
+            return None;
+        }
+
+        let adapter = adap_op.unwrap();
+
+        let res = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: None,
+                    features: wgpu::Features::empty(),
+                    limits: wgpu::Limits::default(),
+                },
+                None,
+            )
+            .await;
+
+        if res.is_err() {
+            log_error!("Failed to creat renderer Device and Queue");
+            return None;
+        }
+
+        let (device, queue) = res.unwrap();
+
+        surface.configure(&device, &wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            width: win.get_width() as u32,
+            height: win.get_height() as u32,
+            present_mode: wgpu::PresentMode::Fifo
+        });
+
+        let shader_module = device
+            .create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shaders/vertex_shader.wgsl"))),
+            });
+
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
-            layout: None,
+            layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: None,
+                bind_group_layouts: &[],
+                push_constant_ranges: &[]
+            })),
             vertex: wgpu::VertexState {
                 module: &shader_module,
                 entry_point: "vs_main",
@@ -66,22 +113,39 @@ impl RenderDrawContext {
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::TextureFormat::Bgra8UnormSrgb.into())]
             }),
-            primitive: Default::default(),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                unclipped_depth: false,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                conservative: false
+            },
             depth_stencil: None,
-            multisample: Default::default(),
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false
+            },
             multiview: None
         });
 
-        return RenderDrawContext {
+
+        return Some(RenderContext {
+            surface,
+            adapter,
+            device,
+            queue,
             pipeline
-        }
+        });
     }
 
-    fn render(&mut self, context: &RenderDeviceContext) {
-        let mut command_encoder = context.
+    fn render(&mut self) {
+        let mut command_encoder = self.
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
 
-        let tex_res = context.surface.get_current_texture();
+        let tex_res = self.surface.get_current_texture();
 
         if tex_res.is_err() {
             if tex_res.as_ref().err().is_some() {
@@ -129,70 +193,7 @@ impl RenderDrawContext {
             render_pass.draw(0..3, 0..1);
         }
 
-        context.queue.submit(iter::once(command_encoder.finish()));
-    }
-}
-
-pub struct RenderDeviceContext {
-    pub surface: wgpu::Surface,
-    pub adapter: wgpu::Adapter,
-    pub device: wgpu::Device,
-    pub queue: wgpu::Queue,
-}
-
-impl RenderDeviceContext {
-    pub(crate) async fn new(win: &Window) -> Option<RenderDeviceContext> {
-        let inst = Instance::new(wgpu::Backends::VULKAN);
-
-        let surface = unsafe { inst.create_surface(win) };
-
-        let adap_op = inst
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
-                force_fallback_adapter: false,
-                compatible_surface: Some(&surface),
-            })
-            .await;
-
-        if adap_op.is_none() {
-            log_error!("Failed to create adapter for renderer");
-            return None;
-        }
-
-        let adapter = adap_op.unwrap();
-
-        let res = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: None,
-                    features: wgpu::Features::empty(),
-                    limits: wgpu::Limits::default(),
-                },
-                None,
-            )
-            .await;
-
-        if res.is_err() {
-            log_error!("Failed to creat renderer Device and Queue");
-            return None;
-        }
-
-        let (device, queue) = res.unwrap();
-
-        surface.configure(&device, &wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu::TextureFormat::Bgra8UnormSrgb,
-            width: win.get_width() as u32,
-            height: win.get_height() as u32,
-            present_mode: wgpu::PresentMode::Fifo
-        });
-
-        return Some(RenderDeviceContext {
-            surface,
-            adapter,
-            device,
-            queue,
-        });
+        self.queue.submit(iter::once(command_encoder.finish()));
     }
 
     #[inline]

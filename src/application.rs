@@ -13,7 +13,7 @@ impl App {
     #[inline]
     pub fn create(name: &'static str, x: i16, y: i16, width: u16, height: u16) -> Option<Self> {
         if cfg!(debug_assertions) {
-            log_info!("Debug Mode is on, so logging will be more verbose.");
+            //log_info!("Debug Mode is on, so logging will be more verbose.");
         }
 
         let proto_window = Window::new(name, width, height, x, y);
