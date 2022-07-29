@@ -1,6 +1,6 @@
 [package]
 name = "rovella"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["JMBenson01 <jackiemartinbenson@gmail.com>"]
 edition = "2021"
 license = "GPL-2.0-or-later"
