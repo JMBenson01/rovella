@@ -51,7 +51,7 @@ pub mod types {
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle, Win32Handle, XcbHandle};
 use raw_window_handle::RawWindowHandle::{Win32, Xcb};
 
-use crate::event::{Event, EventData, EventDeque, EventType};
+use crate::event::*;
 use crate::keys::Key;
 use plat_libs::*;
 
@@ -269,32 +269,6 @@ impl TPlatformWindow for PlatformWindow {
         }
     }
 }
-
-#[cfg(target_os = "windows")]
-impl From<u32> for EventType {
-    /// converts a u32 to EventType and vice versa
-    fn from(msg: u32) -> Self {
-        match msg {
-            WM_CLOSE => EventType::WinClose,
-            WM_SHOWWINDOW => EventType::WinShow,
-            WM_SIZE => EventType::WinResize,
-            WM_KEYDOWN => EventType::KeyDown,
-            WM_SYSKEYDOWN => EventType::KeyDown,
-            WM_KEYUP => EventType::KeyUp,
-            WM_SYSKEYUP => EventType::KeyUp,
-            WM_MOUSEMOVE => EventType::MouseMove,
-            WM_MOUSEWHEEL => EventType::MouseWheel,
-            WM_LBUTTONDOWN => EventType::MouseLeftBtnDown,
-            WM_MBUTTONDOWN => EventType::MouseMidBtnDown,
-            WM_RBUTTONDOWN => EventType::MouseRightBtnDown,
-            WM_LBUTTONUP => EventType::MouseLeftBtnUp,
-            WM_MBUTTONUP => EventType::MouseMidBtnUp,
-            WM_RBUTTONUP => EventType::MouseRightBtnUp,
-            _ => EventType::None,
-        }
-    }
-}
-
 #[cfg(target_os = "windows")]
 unsafe fn add_event_to_que(event: Event, hwnd: *mut HWND__) {
     let ev_que: *mut EventDeque = GetWindowLongPtrA(hwnd, GWLP_USERDATA) as _;
@@ -330,10 +304,7 @@ unsafe extern "system" fn window_proc(
         }
         WM_CLOSE => {
             add_event_to_que(
-                Event {
-                    e_type: EventType::WinClose,
-                    data: EventData::default()
-                },
+                Event::WinClose,
                 hwnd,
             );
             return 0;
@@ -344,38 +315,23 @@ unsafe extern "system" fn window_proc(
         }
         WM_KEYDOWN | WM_SYSKEYDOWN => {
             add_event_to_que(
-                Event {
-                    e_type: EventType::KeyDown,
-                    data: EventData {
-                        m_u32: wparam as u32,
-                    }
-                },
+                Event::KeyDown(Key::from(wparam as u32)),
                 hwnd,
             );
         }
         WM_KEYUP | WM_SYSKEYUP => {
             add_event_to_que(
-                Event {
-                    e_type: EventType::KeyUp,
-                    data: EventData {
-                        m_u32: wparam as u32,
-                    }
-                },
-                hwnd,
+                Event::KeyUp(Key::from(wparam as u32)),
+                hwnd
             );
         }
         WM_MOUSEMOVE => {
             add_event_to_que(
-                Event {
-                    e_type: EventType::MouseMove,
-                    data: EventData {
-                        m_arr2_i16: [
-                            GET_X_LPARAM(lparam) as i16,
-                            GET_Y_LPARAM(lparam) as i16
-                        ]
-                    }
-                },
-                hwnd,
+                Event::MouseMove(
+                    GET_X_LPARAM(lparam) as i16,
+                    GET_Y_LPARAM(lparam) as i16
+                ),
+                hwnd
             );
         }
         WM_MOUSEWHEEL => {
@@ -383,74 +339,51 @@ unsafe extern "system" fn window_proc(
             if z_delta != 0 {
                 if z_delta < 0 {
                     add_event_to_que(
-                        Event {
-                            e_type: EventType::MouseWheel,
-                            data: EventData { m_i32: -1 as i32 },
-                        },
-                        hwnd,
+                        Event::MouseWheel(-1 as i32)
+                        ,
+                        hwnd
                     );
                 } else {
                     add_event_to_que(
-                        Event {
-                            e_type: EventType::MouseWheel,
-                            data: EventData { m_i32: 1 as i32 },
-                        },
-                        hwnd,
+                        Event::MouseWheel(1 as i32),
+                        hwnd
                     );
                 }
             }
         }
         WM_LBUTTONDOWN => {
             add_event_to_que(
-                Event {
-                    e_type: EventType::MouseLeftBtnDown,
-                    data: EventData::default(),
-                },
+                Event::MouseLeftBtnDown,
                 hwnd,
             );
         }
         WM_MBUTTONDOWN => {
             add_event_to_que(
-                Event {
-                    e_type: EventType::MouseMidBtnDown,
-                    data: EventData::default(),
-                },
+                Event::MouseMidBtnDown,
                 hwnd,
             );
         }
         WM_RBUTTONDOWN => {
             add_event_to_que(
-                Event {
-                    e_type: EventType::MouseRightBtnDown,
-                    data: EventData::default(),
-                },
+                Event::MouseRightBtnDown,
                 hwnd,
             );
         }
         WM_LBUTTONUP => {
             add_event_to_que(
-                Event {
-                    e_type: EventType::MouseLeftBtnUp,
-                    data: EventData::default(),
-                },
+                Event::MouseLeftBtnUp,
                 hwnd,
             );
         }
         WM_MBUTTONUP => {
             add_event_to_que(
-                Event {
-                    e_type: EventType::MouseMidBtnUp,
-                    data: EventData::default(),
-                },
+                Event::MouseMidBtnUp,
                 hwnd,
             );
         }
         WM_RBUTTONUP => {
             add_event_to_que(
-                Event {
-                    e_type: EventType::MouseRightBtnUp,
-                    data: EventData::default(),
-                },
+                Event::MouseRightBtnUp,
                 hwnd,
             );
         }

@@ -30,12 +30,12 @@ fn main() {
 
         let event = event_op.unwrap();
 
-        match event.e_type {
-            EventType::WinClose => {
+        match event {
+            Event::WinClose => {
                 app.quit();
             }
-            EventType::KeyDown => {
-                if event.get_key() == Key::Escape {
+            Event::KeyDown(key) => {
+                if key == Key::Escape {
                     app.quit();
                 }
             }
