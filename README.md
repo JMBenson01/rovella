@@ -25,12 +25,8 @@
 
 ## Example Program
 ```rust
-use rovella::event::{EventManager, EventType};
-use rovella::keys::Key;
-use rovella::application;
-
 fn main() {
-    let mut app: application::App = application::App::create(
+    let mut app: rovella::App = rovella::App::create(
         "hello world",
         15,
         15,
@@ -38,13 +34,7 @@ fn main() {
         1080
     ).unwrap(); // Only if your lazy :)
 
-    // Note: I haven't tested the raw window handle much so it may have bugs
-    let renderer = Renderer3rdParty::new(
-        app.get_window_ref() // gets window with HasRawWindowHandle trait
-    );
-
     while app.is_running() {
-
         let event_op = app.poll_events();
         if event_op.is_none() {
             continue;
@@ -52,12 +42,12 @@ fn main() {
 
         let event = event_op.unwrap();
 
-        match event.e_type {
-            EventType::WinClose => {
+        match event {
+            rovella::Event::WinClose => {
                 app.quit();
             }
-            EventType::KeyDown => {
-                if event.get_key() == Key::Escape {
+            rovella::Event::KeyDown(key) => {
+                if key == rovella::Key::Escape {
                     app.quit();
                 }
             }
@@ -66,6 +56,6 @@ fn main() {
     }
 
     app.shutdown();
-
 }
+
 ```

@@ -1,20 +1,5 @@
-use event::*;
-use keys::Key;
-
-#[macro_use]
-extern crate rovella_logger;
-extern crate raw_window_handle;
-
-#[cfg(target_os = "linux")]
-extern crate libc;
-
-pub mod application;
-pub mod event;
-pub mod keys;
-pub mod platform;
-
 fn main() {
-    let mut app: application::App = application::App::create(
+    let mut app: rovella::App = rovella::App::create(
         "hello world",
         15,
         15,
@@ -31,11 +16,11 @@ fn main() {
         let event = event_op.unwrap();
 
         match event {
-            Event::WinClose => {
+            rovella::Event::WinClose => {
                 app.quit();
             }
-            Event::KeyDown(key) => {
-                if key == Key::Escape {
+            rovella::Event::KeyDown(key) => {
+                if key == rovella::Key::Escape {
                     app.quit();
                 }
             }

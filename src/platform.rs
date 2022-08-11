@@ -788,12 +788,7 @@ impl TPlatformWindow for PlatformWindow {
                             (((*kb_event).detail as u32) & xlib::ShiftMask) as i32,
                         );
 
-                        ev_que.push_back(Event {
-                            e_type: EventType::KeyDown,
-                            data: EventData {
-                                m_u32: key as u32,
-                            }
-                        });
+                        ev_que.push_back(Event::KeyDown(key as u32));
                     }
                     XCB_KEY_RELEASE => {
                         let kb_event = event as *const xcb_key_press_event_t;
@@ -804,46 +799,27 @@ impl TPlatformWindow for PlatformWindow {
                             (((*kb_event).detail as u32) & xlib::ShiftMask) as i32,
                         );
 
-                        ev_que.push_back(Event {
-                            e_type: EventType::KeyUp,
-                            data: EventData {
-                                m_u32: key as u32,
-                            }
-                        });
+                        ev_que.push_back(Event::KeyUp(key as u32));
                     }
                     XCB_MOTION_NOTIFY => {
                         let motion = event as *const xcb_motion_notify_event_t;
-                        ev_que.push_back(Event {
-                            e_type: EventType::MouseMove,
-                            data: EventData {
-                                m_i32: [
-                                    (*motion).root_x as i32,
-                                    (*motion).root_y as i32
-                                ]
-                            }
-                        });
+                        ev_que.push_back(Event::MouseMove(
+                            (*motion).root_x as i32,
+                            (*motion).root_y as i32
+                        ));
                     }
                     XCB_BUTTON_PRESS => {
                         let button_event = event as *mut xcb_button_press_event_t;
 
                         match (*button_event).detail as u32 {
                             XCB_BUTTON_INDEX_1 => {
-                                ev_que.push_back(Event {
-                                    e_type: EventType::MouseLeftBtnDown,
-                                    data: EventData::default(),
-                                });
+                                ev_que.push_back(Event::MouseLeftBtnDown);
                             }
                             XCB_BUTTON_INDEX_2 => {
-                                ev_que.push_back(Event {
-                                    e_type: EventType::MouseMidBtnDown,
-                                    data: EventData::default(),
-                                });
+                                ev_que.push_back(Event::MouseMidBtnDown);
                             }
                             XCB_BUTTON_INDEX_3 => {
-                                ev_que.push_back(Event {
-                                    e_type: EventType::MouseRightBtnDown,
-                                    data: EventData::default(),
-                                });
+                                ev_que.push_back(Event::MouseRightBtnDown);
                             }
                             _ => {}
                         }
@@ -853,22 +829,13 @@ impl TPlatformWindow for PlatformWindow {
 
                         match (*button_event).detail as u32 {
                             XCB_BUTTON_INDEX_1 => {
-                                ev_que.push_back(Event {
-                                    e_type: EventType::MouseLeftBtnUp,
-                                    data: EventData::default(),
-                                });
+                                ev_que.push_back(Event::MouseLeftBtnUp);
                             }
                             XCB_BUTTON_INDEX_2 => {
-                                ev_que.push_back(Event {
-                                    e_type: EventType::MouseMidBtnUp,
-                                    data: EventData::default(),
-                                });
+                                ev_que.push_back(Event::MouseMidBtnUp);
                             }
                             XCB_BUTTON_INDEX_3 => {
-                                ev_que.push_back(Event {
-                                    e_type: EventType::MouseRightBtnUp,
-                                    data: EventData::default(),
-                                });
+                                ev_que.push_back(Event::MouseRightBtnUp);
                             }
                             _ => {}
                         }
@@ -879,10 +846,7 @@ impl TPlatformWindow for PlatformWindow {
                         log_info!("Client Message");
 
                         if (*cm).data.data32()[0] == self.wm_delete_win {
-                            ev_que.push_back(Event {
-                                e_type: EventType::WinClose,
-                                data: EventData::default(),
-                            });
+                            ev_que.push_back(Event::WinClose);
                         }
                     }
                     _ => {}
